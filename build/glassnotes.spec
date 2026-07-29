@@ -8,6 +8,7 @@ block_cipher = None
 project_root = Path(SPECPATH).resolve().parent
 main_script = project_root / "main.py"
 icon_path = project_root / "assets" / "icon.ico"
+png_path = project_root / "glassnotes.png"
 
 manifest = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
@@ -28,11 +29,17 @@ manifest = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </assembly>
 """
 
+datas_list = []
+if icon_path.is_file():
+    datas_list.append((str(icon_path), "assets"))
+if png_path.is_file():
+    datas_list.append((str(png_path), "."))
+
 a = Analysis(
     [str(main_script)],
     pathex=[str(project_root)],
     binaries=[],
-    datas=[(str(icon_path), "assets")] if icon_path.is_file() else [],
+    datas=datas_list,
     hiddenimports=["PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets"],
     hookspath=[],
     hooksconfig={},

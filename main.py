@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -148,6 +149,16 @@ def main() -> int:
         hotkey.unregister()
 
     app.aboutToQuit.connect(on_about_to_quit)
+
+    # Allow Ctrl+C to terminate the Qt event loop cleanly from a console.
+    try:
+        from PySide6.QtCore import QTimer
+        signal.signal(signal.SIGINT, lambda sig, frame: app.quit())
+        sig_timer = QTimer()
+        sig_timer.start(500)
+        sig_timer.timeout.connect(lambda: None)
+    except Exception:
+        pass
 
     return app.exec()
 

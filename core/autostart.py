@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 import winreg
+from pathlib import Path
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 APP_NAME = "GlassNotes"
@@ -48,7 +49,8 @@ def disable() -> bool:
 
 
 def get_executable_path() -> str:
-    """Return the path used for autostart registration."""
+    """Return the formatted command line string used for autostart registration."""
     if getattr(sys, "frozen", False):
-        return sys.executable
-    return sys.executable
+        return f'"{sys.executable}"'
+    script = Path(__file__).resolve().parent.parent / "main.py"
+    return f'"{sys.executable}" "{script}"'

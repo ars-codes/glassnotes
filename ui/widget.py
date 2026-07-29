@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from PySide6.QtCore import (
     QEasingCurve,
     QPoint,
     QPropertyAnimation,
     QRect,
+    QSize,
     Qt,
     QTimer,
     Signal,
 )
-from PySide6.QtGui import QCursor, QFont, QPainterPath, QRegion
+from PySide6.QtGui import QCursor, QFont, QIcon, QPainter
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -21,6 +25,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QVBoxLayout,
     QWidget,
+    QStyleOption,
+    QStyle,
 )
 
 from core.acrylic import apply_acrylic
@@ -36,6 +42,20 @@ ANIMATION_MS = 150
 SAVE_DEBOUNCE_MS = 500
 CORNER_RADIUS = styles.CORNER_RADIUS
 MIN_VISIBLE = 50
+
+
+def _load_app_icon() -> QIcon:
+    if getattr(sys, "frozen", False):
+        base = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    else:
+        base = Path(__file__).resolve().parent.parent
+    ico = base / "assets" / "icon.ico"
+    if ico.is_file():
+        return QIcon(str(ico))
+    png = base / "glassnotes.png"
+    if png.is_file():
+        return QIcon(str(png))
+    return QIcon()
 
 
 class HeaderBar(QWidget):
@@ -65,7 +85,6 @@ class HeaderBar(QWidget):
         layout.addWidget(collapse_btn)
 
         close_btn = QPushButton("×", self)
-        close_btn.setObjectName("headerBtn")
         close_btn.setProperty("class", "close")
         close_btn.setObjectName("closeBtn")
         close_btn.setToolTip("Hide")
@@ -73,7 +92,7 @@ class HeaderBar(QWidget):
         layout.addWidget(close_btn)
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             window = self.window()
             self._drag_pos = event.globalPosition().toPoint() - window.frameGeometry().topLeft()
             event.accept()
@@ -81,7 +100,7 @@ class HeaderBar(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
-        if self._drag_pos is not None and event.buttons() & Qt.LeftButton:
+        if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
             window = self.window()
             if hasattr(window, "move_window"):
                 window.move_window(event.globalPosition().toPoint() - self._drag_pos)
@@ -100,13 +119,13 @@ class ResizeHandle(QFrame):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setObjectName("resizeHandle")
-        self.setCursor(QCursor(Qt.SizeVerCursor))
+        self.setCursor(QCursor(Qt.CursorShape.SizeVerCursor))
         self._dragging = False
         self._start_global_y = 0
         self._start_height = 0
 
     def mousePressEvent(self, event) -> None:
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             window = self.window()
             self._dragging = True
             self._start_global_y = int(event.globalPosition().y())
@@ -162,9 +181,14 @@ class GlassNotesWidget(QWidget):
         self._animation.finished.connect(self._on_animation_finished)
 
         self.setWindowFlags(
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
         )
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        # Ensure the widget receives mouse events (avoid accidental click-through)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setFixedWidth(FIXED_WIDTH)
 
         self._build_ui()
@@ -174,6 +198,12 @@ class GlassNotesWidget(QWidget):
         font.setFamilies(["Segoe UI Variable", "Segoe UI", "sans-serif"])
         font.setPointSize(10)
         self.setFont(font)
+
+    def paintEvent(self, event) -> None:
+        opt = QStyleOption()
+        opt.initFrom(self)
+        p = QPainter(self)
+        self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, opt, p, self)
 
     def _build_ui(self) -> None:
         self._root_layout = QVBoxLayout(self)
@@ -203,8 +233,14 @@ class GlassNotesWidget(QWidget):
 
         self._root_layout.addWidget(self._expanded_container)
 
-        self._collapsed_btn = QPushButton("N", self)
+        self._collapsed_btn = QPushButton(self)
         self._collapsed_btn.setObjectName("collapsedIcon")
+        app_icon = _load_app_icon()
+        if not app_icon.isNull():
+            self._collapsed_btn.setIcon(app_icon)
+            self._collapsed_btn.setIconSize(QSize(26, 26))
+        else:
+            self._collapsed_btn.setText("N")
         self._collapsed_btn.setToolTip("Expand GlassNotes")
         self._collapsed_btn.clicked.connect(self.expand)
         self._root_layout.addWidget(self._collapsed_btn)
@@ -251,7 +287,6 @@ class GlassNotesWidget(QWidget):
 
         self.move(x, y)
         self._clamp_to_screen()
-        self._update_rounded_mask()
 
         if self._visible_state:
             self.show()
@@ -261,11 +296,9 @@ class GlassNotesWidget(QWidget):
     def showEvent(self, event) -> None:
         super().showEvent(event)
         QTimer.singleShot(0, self._apply_acrylic_effect)
-        self._update_rounded_mask()
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
-        self._update_rounded_mask()
 
     def _apply_acrylic_effect(self) -> None:
         if self._acrylic_applied:
@@ -276,15 +309,6 @@ class GlassNotesWidget(QWidget):
         self._acrylic_applied = True
         self._apply_styles()
 
-    def _update_rounded_mask(self) -> None:
-        path = QPainterPath()
-        if self._collapsed:
-            path.addEllipse(0, 0, self.width(), self.height())
-        else:
-            path.addRoundedRect(
-                0, 0, self.width(), self.height(), CORNER_RADIUS, CORNER_RADIUS
-            )
-        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
 
     def move_window(self, top_left: QPoint) -> None:
         self.move(top_left)
@@ -401,7 +425,6 @@ class GlassNotesWidget(QWidget):
             self._root_layout.setContentsMargins(0, 0, 0, 0)
 
         self._apply_styles()
-        self._update_rounded_mask()
         self.persist_geometry()
 
     def toggle_visibility(self) -> None:

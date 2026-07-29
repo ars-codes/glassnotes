@@ -4,28 +4,32 @@ FONT_FAMILY = '"Segoe UI Variable", "Segoe UI", sans-serif'
 
 CORNER_RADIUS = 12
 
-# Base widget — transparent when native acrylic is active
+# Base widget — dark translucent glass background for native acrylic/mica
 BASE_STYLE = f"""
 QWidget#glassRoot {{
-    background: transparent;
-    border: none;
+    background: rgba(12, 18, 48, 180);
+    border: 1px solid rgba(190, 210, 255, 90);
+    border-radius: {CORNER_RADIUS}px;
     font-family: {FONT_FAMILY};
-    color: #E8E8E8;
+    color: #E8F4FF;
 }}
 """
 
 # Fallback when native acrylic is unavailable
 FALLBACK_STYLE = f"""
 QWidget#glassRoot {{
+    /* deep navy / indigo vertical gradient with a subtle top gloss stop */
     background: qlineargradient(
         x1:0, y1:0, x2:0, y2:1,
-        stop:0 rgba(40, 40, 44, 0.88),
-        stop:1 rgba(24, 24, 28, 0.92)
+        stop:0 rgba(20, 30, 70, 224),      /* rich saturated navy at top */
+        stop:0.06 rgba(60, 90, 200, 15),   /* thin glossy top inner highlight */
+        stop:1 rgba(10, 14, 40, 235)       /* darker deep-blue at bottom */
     );
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    /* rim-light: slightly cool, brighter thin border to read as rim */
+    border: 1px solid rgba(190, 210, 255, 90);
     border-radius: {CORNER_RADIUS}px;
     font-family: {FONT_FAMILY};
-    color: #E8E8E8;
+    color: #E8F4FF; /* slightly cool white for legibility on blue */
 }}
 """
 
@@ -37,7 +41,7 @@ QWidget#headerBar {
     max-height: 32px;
 }
 QLabel#titleLabel {
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(234, 244, 255, 184);
     font-size: 11px;
     font-weight: 500;
     padding-left: 4px;
@@ -48,7 +52,7 @@ QPushButton#headerBtn {
     background: transparent;
     border: none;
     border-radius: 6px;
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255, 255, 255, 166);
     font-size: 14px;
     min-width: 28px;
     max-width: 28px;
@@ -56,16 +60,29 @@ QPushButton#headerBtn {
     max-height: 28px;
     padding: 0;
 }
-QPushButton#headerBtn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.95);
-}
-QPushButton#headerBtn:pressed {
-    background: rgba(255, 255, 255, 0.06);
+QPushButton#closeBtn {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: rgba(255, 255, 255, 166);
+    font-size: 14px;
+    min-width: 28px;
+    max-width: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0;
 }
 QPushButton#closeBtn:hover {
-    background: rgba(232, 17, 35, 0.75);
+    background: rgba(232, 17, 35, 191);
     color: white;
+}
+QPushButton#headerBtn:hover {
+    /* cool blue hover glow */
+    background: rgba(100, 150, 255, 31);
+    color: rgba(235, 246, 255, 250);
+}
+QPushButton#headerBtn:pressed {
+    background: rgba(60, 110, 220, 26);
 }
 """
 
@@ -78,7 +95,8 @@ QPlainTextEdit#noteEditor {
     font-size: 13px;
     line-height: 1.45;
     padding: 4px 10px 8px 10px;
-    selection-background-color: rgba(100, 160, 255, 0.45);
+    /* slightly richer selection tint to match blue theme */
+    selection-background-color: rgba(100, 150, 255, 128);
     selection-color: #FFFFFF;
 }
 QPlainTextEdit#noteEditor QScrollBar:vertical {
@@ -87,7 +105,7 @@ QPlainTextEdit#noteEditor QScrollBar:vertical {
     margin: 2px 2px 2px 0;
 }
 QPlainTextEdit#noteEditor QScrollBar::handle:vertical {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 56);
     border-radius: 3px;
     min-height: 24px;
 }
@@ -112,21 +130,23 @@ QWidget#resizeHandle {
     border: none;
 }
 QWidget#resizeHandle:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 20);
 }
 """
 
 COLLAPSED_STYLE = """
 QPushButton#collapsedIcon {
+    /* jeweled radial: brighter center, deep outer rim */
     background: qradialgradient(
         cx:0.5, cy:0.5, radius:0.85,
         fx:0.5, fy:0.5,
-        stop:0 rgba(60, 120, 220, 0.55),
-        stop:1 rgba(30, 30, 36, 0.92)
+        stop:0 rgba(70, 110, 230, 178),   /* jewel-blue center glow */
+        stop:0.6 rgba(30, 60, 150, 128),
+        stop:1 rgba(15, 20, 55, 242)     /* deep outer edge */
     );
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(190, 210, 255, 90);
     border-radius: 24px;
-    color: white;
+    color: #EAF4FF;
     font-size: 18px;
     font-weight: 600;
     min-width: 48px;
@@ -134,14 +154,15 @@ QPushButton#collapsedIcon {
     min-height: 48px;
     max-height: 48px;
     padding: 0;
+    qproperty-iconSize: 26px 26px;
 }
 QPushButton#collapsedIcon:hover {
-    border-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(220, 235, 255, 128);
     background: qradialgradient(
         cx:0.5, cy:0.5, radius:0.85,
         fx:0.5, fy:0.5,
-        stop:0 rgba(80, 140, 240, 0.65),
-        stop:1 rgba(36, 36, 42, 0.95)
+        stop:0 rgba(90, 130, 250, 199),
+        stop:1 rgba(18, 26, 70, 250)
     );
 }
 """
@@ -151,12 +172,12 @@ QPushButton#collapsedIcon {
     background: qradialgradient(
         cx:0.5, cy:0.5, radius:0.85,
         fx:0.5, fy:0.5,
-        stop:0 rgba(60, 120, 220, 0.65),
-        stop:1 rgba(24, 24, 28, 0.96)
+        stop:0 rgba(70, 110, 230, 178),
+        stop:1 rgba(15, 20, 55, 242)
     );
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(190, 210, 255, 90);
     border-radius: 24px;
-    color: white;
+    color: #EAF4FF;
     font-size: 18px;
     font-weight: 600;
     min-width: 48px;
@@ -164,6 +185,7 @@ QPushButton#collapsedIcon {
     min-height: 48px;
     max-height: 48px;
     padding: 0;
+    qproperty-iconSize: 26px 26px;
 }
 """
 
