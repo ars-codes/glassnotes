@@ -1,4 +1,4 @@
-"""QSS styles for GlassNotes dark glass theme."""
+"""QSS styles for FloatNote dark glass theme."""
 
 FONT_FAMILY = '"Segoe UI Variable", "Segoe UI", sans-serif'
 

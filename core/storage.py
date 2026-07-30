@@ -1,4 +1,4 @@
-"""File save/load logic for GlassNotes notes and window config."""
+"""File save/load logic for FloatNote notes and window config."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-NOTES_DIR = Path.home() / "Documents" / "GlassNotes"
+NOTES_DIR = Path.home() / "Documents" / "FloatNote"
 NOTES_FILE = NOTES_DIR / "notes.txt"
 CONFIG_FILE = NOTES_DIR / "config.json"
 BACKUPS_DIR = NOTES_DIR / "backups"
@@ -26,7 +26,7 @@ DEFAULT_CONFIG: dict = {
 
 
 def ensure_dirs() -> None:
-    """Create GlassNotes data directories on first run."""
+    """Create FloatNote data directories on first run."""
     try:
         NOTES_DIR.mkdir(parents=True, exist_ok=True)
         BACKUPS_DIR.mkdir(parents=True, exist_ok=True)

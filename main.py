@@ -1,4 +1,4 @@
-"""GlassNotes — lightweight sticky-notes widget for Windows."""
+"""FloatNote — lightweight sticky-notes widget for Windows."""
 
 from __future__ import annotations
 
@@ -17,9 +17,9 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from core import autostart, storage
 from core.hotkey import GlobalHotkeyManager
-from ui.widget import GlassNotesWidget
+from ui.widget import FloatNoteWidget
 
-APP_NAME = "GlassNotes"
+APP_NAME = "FloatNote"
 
 
 def resource_path(relative: str) -> Path:
@@ -35,7 +35,7 @@ def load_app_icon() -> QIcon:
     ico = resource_path("assets/icon.ico")
     if ico.is_file():
         return QIcon(str(ico))
-    png = Path(__file__).resolve().parent / "glassnotes.png"
+    png = Path(__file__).resolve().parent / "floatnote.png"
     if png.is_file():
         return QIcon(str(png))
     return QIcon()
@@ -61,7 +61,7 @@ def main() -> int:
     icon = load_app_icon()
     app.setWindowIcon(icon)
 
-    widget = GlassNotesWidget()
+    widget = FloatNoteWidget()
     widget.setWindowIcon(icon)
     widget.initialize(storage.load_notes())
 

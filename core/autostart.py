@@ -7,7 +7,7 @@ import winreg
 from pathlib import Path
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-APP_NAME = "GlassNotes"
+APP_NAME = "FloatNote"
 
 
 def _open_run_key(access: int = winreg.KEY_READ):
@@ -15,7 +15,7 @@ def _open_run_key(access: int = winreg.KEY_READ):
 
 
 def is_enabled() -> bool:
-    """Return True if GlassNotes is registered to run at login."""
+    """Return True if FloatNote is registered to run at login."""
     try:
         with _open_run_key() as key:
             winreg.QueryValueEx(key, APP_NAME)
@@ -27,7 +27,7 @@ def is_enabled() -> bool:
 
 
 def enable(exe_path: str) -> bool:
-    """Register GlassNotes to run at Windows startup."""
+    """Register FloatNote to run at Windows startup."""
     try:
         with _open_run_key(winreg.KEY_SET_VALUE) as key:
             winreg.SetValueEx(key, APP_NAME, 0, winreg.REG_SZ, exe_path)
@@ -37,7 +37,7 @@ def enable(exe_path: str) -> bool:
 
 
 def disable() -> bool:
-    """Remove GlassNotes from Windows startup."""
+    """Remove FloatNote from Windows startup."""
     try:
         with _open_run_key(winreg.KEY_SET_VALUE) as key:
             winreg.DeleteValue(key, APP_NAME)

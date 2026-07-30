@@ -2,11 +2,11 @@
 __pycache__/
 *.pyc
 build/*
-!build/glassnotes.spec
+!build/floatnote.spec
 dist/
 notes.txt
 config.json
-glassnotes_prd.md
+floatnote_prd.md
 bak.txt
 copilot-restyle-prompt.md
 .vscode/

@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for GlassNotes single-file windowed build."""
+"""PyInstaller spec for FloatNote single-file windowed build."""
 
 import sys
 from pathlib import Path
@@ -8,11 +8,11 @@ block_cipher = None
 project_root = Path(SPECPATH).resolve().parent
 main_script = project_root / "main.py"
 icon_path = project_root / "assets" / "icon.ico"
-png_path = project_root / "glassnotes.png"
+png_path = project_root / "floatnote.png"
 
 manifest = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="GlassNotes" version="1.0.0.0" processorArchitecture="*"/>
+  <assemblyIdentity type="win32" name="FloatNote" version="1.0.0.0" processorArchitecture="*"/>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
@@ -60,7 +60,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="GlassNotes",
+    name="FloatNote",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

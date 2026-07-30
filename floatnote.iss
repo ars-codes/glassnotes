@@ -1,8 +1,8 @@
-; Inno Setup Script for GlassNotes
-#define MyAppName "GlassNotes"
+; Inno Setup Script for FloatNote
+#define MyAppName "FloatNote"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "GlassNotes"
-#define MyAppExeName "GlassNotes.exe"
+#define MyAppPublisher "FloatNote"
+#define MyAppExeName "FloatNote.exe"
 
 [Setup]
 AppId={{D37F8A52-9A7B-4B6A-B7F2-7E1A613E99A1}
@@ -12,7 +12,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=GlassNotesSetup
+OutputBaseFilename=FloatNoteSetup
 OutputDir=dist
 Compression=lzma2/max
 SolidCompression=yes
@@ -41,6 +41,6 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'GlassNotes');
+    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'FloatNote');
   end;
 end;

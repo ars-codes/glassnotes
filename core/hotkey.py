@@ -38,7 +38,7 @@ class _HotkeyWindow:
         self._wndproc_ref = WNDPROC(self._window_proc)
 
     def create(self) -> bool:
-        class_name = "GlassNotesHotkeyClass"
+        class_name = "FloatNoteHotkeyClass"
         hinstance = HINSTANCE(kernel32.GetModuleHandleW(None))
 
         from ctypes import Structure, c_int32, c_uint32, c_wchar_p
@@ -80,7 +80,7 @@ class _HotkeyWindow:
         hwnd = user32.CreateWindowExW(
             0,
             class_name,
-            "GlassNotesHotkey",
+            "FloatNoteHotkey",
             0,
             0,
             0,

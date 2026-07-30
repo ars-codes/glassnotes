@@ -1,9 +1,9 @@
-; Inno Setup script for GlassNotes
+; Inno Setup script for FloatNote
 
-#define MyAppName "GlassNotes"
+#define MyAppName "FloatNote"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "GlassNotes"
-#define MyAppExeName "GlassNotes.exe"
+#define MyAppPublisher "FloatNote"
+#define MyAppExeName "FloatNote.exe"
 #define MyAppId "{A7B3C4D5-E6F7-4890-ABCD-EF1234567890}"
 
 [Setup]
@@ -11,11 +11,11 @@ AppId={{#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={localappdata}\GlassNotes
+DefaultDirName={localappdata}\FloatNote
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=GlassNotesSetup
+OutputBaseFilename=FloatNoteSetup
 SetupIconFile=..\assets\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/ultra64
@@ -41,7 +41,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "GlassNotes"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "FloatNote"; Flags: uninsdeletevalue
 
 [Code]
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
@@ -51,7 +51,7 @@ begin
   if CurUninstallStep = usPostUninstall then
   begin
     RunKey := 'Software\Microsoft\Windows\CurrentVersion\Run';
-    if RegValueExists(HKCU, RunKey, 'GlassNotes') then
-      RegDeleteValue(HKCU, RunKey, 'GlassNotes');
+    if RegValueExists(HKCU, RunKey, 'FloatNote') then
+      RegDeleteValue(HKCU, RunKey, 'FloatNote');
   end;
 end;

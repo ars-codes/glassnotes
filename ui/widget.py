@@ -1,4 +1,4 @@
-"""GlassNotes main sticky-note widget."""
+"""FloatNote main sticky-note widget."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ def _load_app_icon() -> QIcon:
     ico = base / "assets" / "icon.ico"
     if ico.is_file():
         return QIcon(str(ico))
-    png = base / "glassnotes.png"
+    png = base / "floatnote.png"
     if png.is_file():
         return QIcon(str(png))
     return QIcon()
@@ -92,13 +92,13 @@ class HeaderBar(QWidget):
         super().__init__(parent)
         self.setObjectName("headerBar")
         self._drag_pos: QPoint | None = None
-        self._main_window: GlassNotesWidget | None = None
+        self._main_window: FloatNoteWidget | None = None
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 0, 6, 0)
         layout.setSpacing(2)
 
-        title = QLabel("GlassNotes", self)
+        title = QLabel("FloatNote", self)
         title.setObjectName("titleLabel")
         layout.addWidget(title)
         layout.addStretch()
@@ -148,7 +148,7 @@ class ResizeHandle(QFrame):
         self._dragging = False
         self._start_global_y = 0
         self._start_height = 0
-        self._main_window: GlassNotesWidget | None = None
+        self._main_window: FloatNoteWidget | None = None
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
@@ -216,7 +216,7 @@ class DraggableButton(QPushButton):
         super().mouseReleaseEvent(event)
 
 
-class GlassNotesWidget(QWidget):
+class FloatNoteWidget(QWidget):
     """Frameless always-on-top sticky note with collapse animation."""
 
     visibility_changed = Signal(bool)
@@ -288,7 +288,7 @@ class GlassNotesWidget(QWidget):
 
         self._editor = QPlainTextEdit(self._expanded_container)
         self._editor.setObjectName("noteEditor")
-        self._editor.setFrameShape(QFrame.NoFrame)
+        self._editor.setFrameShape(QFrame.Shape.NoFrame)
         self._editor.setTabChangesFocus(False)
         self._editor.setPlaceholderText("Jot something down…")
         self._editor.textChanged.connect(self._schedule_save)
@@ -310,7 +310,7 @@ class GlassNotesWidget(QWidget):
             self._collapsed_btn.setIconSize(QSize(COLLAPSED_SIZE, COLLAPSED_SIZE))
         else:
             self._collapsed_btn.setText("N")
-        self._collapsed_btn.setToolTip("Expand GlassNotes")
+        self._collapsed_btn.setToolTip("Expand FloatNote")
         self._collapsed_btn.clicked.connect(self.expand)
         self._root_layout.addWidget(self._collapsed_btn)
         self._collapsed_btn.hide()
@@ -372,7 +372,7 @@ class GlassNotesWidget(QWidget):
     def _apply_acrylic_effect(self) -> None:
         if self._acrylic_applied:
             return
-        hwnd = int(self.winId())
+        hwnd = self.winId()
         ok = apply_acrylic(hwnd, dark=True)
         self._use_fallback = not ok
         self._acrylic_applied = True
