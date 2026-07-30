@@ -15,7 +15,7 @@ from PySide6.QtCore import (
     QTimer,
     Signal,
 )
-from PySide6.QtGui import QCursor, QFont, QIcon, QPainter
+from PySide6.QtGui import QCursor, QFont, QIcon, QPainter, QPixmap, QPainterPath
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -34,7 +34,7 @@ from core.storage import load_config, save_config, save_notes
 from ui import styles
 
 FIXED_WIDTH = 288
-COLLAPSED_SIZE = 48
+COLLAPSED_SIZE = 64
 HEADER_HEIGHT = 32
 RESIZE_HANDLE_HEIGHT = 6
 MIN_HEIGHT = 120
@@ -58,6 +58,30 @@ def _load_app_icon() -> QIcon:
     return QIcon()
 
 
+def _get_rounded_icon(icon: QIcon, size: int) -> QIcon:
+    if icon.isNull():
+        return icon
+    pixmap = icon.pixmap(QSize(size, size))
+    if pixmap.isNull():
+        return icon
+    
+    rounded = QPixmap(size, size)
+    rounded.fill(Qt.GlobalColor.transparent)
+    
+    painter = QPainter(rounded)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+    painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+    
+    path = QPainterPath()
+    path.addEllipse(0, 0, size, size)
+    painter.setClipPath(path)
+    
+    painter.drawPixmap(0, 0, pixmap)
+    painter.end()
+    
+    return QIcon(rounded)
+
+
 class HeaderBar(QWidget):
     """Draggable title bar with collapse and close buttons."""
 
@@ -68,6 +92,7 @@ class HeaderBar(QWidget):
         super().__init__(parent)
         self.setObjectName("headerBar")
         self._drag_pos: QPoint | None = None
+        self._main_window: GlassNotesWidget | None = None
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 0, 6, 0)
@@ -93,7 +118,7 @@ class HeaderBar(QWidget):
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            window = self.window()
+            window = self._main_window if self._main_window is not None else self.window()
             self._drag_pos = event.globalPosition().toPoint() - window.frameGeometry().topLeft()
             event.accept()
             return
@@ -101,7 +126,7 @@ class HeaderBar(QWidget):
 
     def mouseMoveEvent(self, event) -> None:
         if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
-            window = self.window()
+            window = self._main_window if self._main_window is not None else self.window()
             if hasattr(window, "move_window"):
                 window.move_window(event.globalPosition().toPoint() - self._drag_pos)
             event.accept()
@@ -123,10 +148,11 @@ class ResizeHandle(QFrame):
         self._dragging = False
         self._start_global_y = 0
         self._start_height = 0
+        self._main_window: GlassNotesWidget | None = None
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            window = self.window()
+            window = self._main_window if self._main_window is not None else self.window()
             self._dragging = True
             self._start_global_y = int(event.globalPosition().y())
             self._start_height = window.height()
@@ -136,9 +162,12 @@ class ResizeHandle(QFrame):
 
     def mouseMoveEvent(self, event) -> None:
         if self._dragging:
-            window = self.window()
+            window = self._main_window if self._main_window is not None else self.window()
             delta = int(event.globalPosition().y()) - self._start_global_y
-            new_height = window._clamp_height(self._start_height + delta)
+            if hasattr(window, "_clamp_height"):
+                new_height = window._clamp_height(self._start_height + delta)
+            else:
+                new_height = self._start_height + delta
             window.resize(FIXED_WIDTH, new_height)
             if hasattr(window, "persist_geometry"):
                 window.persist_geometry()
@@ -148,6 +177,42 @@ class ResizeHandle(QFrame):
 
     def mouseReleaseEvent(self, event) -> None:
         self._dragging = False
+        super().mouseReleaseEvent(event)
+
+
+class DraggableButton(QPushButton):
+    """A button that can be clicked or dragged to move its parent window."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._drag_pos = None
+        self._is_dragging = False
+        self._main_window = None
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            window = self._main_window if self._main_window is not None else self.window()
+            self._drag_pos = event.globalPosition().toPoint() - window.frameGeometry().topLeft()
+            self._is_dragging = False
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:
+        if self._drag_pos is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            window = self._main_window if self._main_window is not None else self.window()
+            delta = event.globalPosition().toPoint() - window.frameGeometry().topLeft() - self._drag_pos
+            if delta.manhattanLength() > 3:
+                self._is_dragging = True
+                if hasattr(window, "move_window"):
+                    window.move_window(event.globalPosition().toPoint() - self._drag_pos)
+                return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:
+        self._drag_pos = None
+        if self._is_dragging:
+            self._is_dragging = False
+            self.setDown(False)
+            return
         super().mouseReleaseEvent(event)
 
 
@@ -177,7 +242,7 @@ class GlassNotesWidget(QWidget):
 
         self._animation = QPropertyAnimation(self, b"geometry", self)
         self._animation.setDuration(ANIMATION_MS)
-        self._animation.setEasingCurve(QEasingCurve.InOutCubic)
+        self._animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         self._animation.finished.connect(self._on_animation_finished)
 
         self.setWindowFlags(
@@ -216,6 +281,7 @@ class GlassNotesWidget(QWidget):
         expanded_layout.setSpacing(0)
 
         self._header = HeaderBar(self._expanded_container)
+        self._header._main_window = self
         self._header.collapse_clicked.connect(self.collapse)
         self._header.close_clicked.connect(self.hide_widget)
         expanded_layout.addWidget(self._header)
@@ -229,16 +295,19 @@ class GlassNotesWidget(QWidget):
         expanded_layout.addWidget(self._editor, 1)
 
         self._resize_handle = ResizeHandle(self._expanded_container)
+        self._resize_handle._main_window = self
         expanded_layout.addWidget(self._resize_handle)
 
         self._root_layout.addWidget(self._expanded_container)
 
-        self._collapsed_btn = QPushButton(self)
+        self._collapsed_btn = DraggableButton(self)
+        self._collapsed_btn._main_window = self
         self._collapsed_btn.setObjectName("collapsedIcon")
         app_icon = _load_app_icon()
         if not app_icon.isNull():
-            self._collapsed_btn.setIcon(app_icon)
-            self._collapsed_btn.setIconSize(QSize(26, 26))
+            rounded_icon = _get_rounded_icon(app_icon, COLLAPSED_SIZE)
+            self._collapsed_btn.setIcon(rounded_icon)
+            self._collapsed_btn.setIconSize(QSize(COLLAPSED_SIZE, COLLAPSED_SIZE))
         else:
             self._collapsed_btn.setText("N")
         self._collapsed_btn.setToolTip("Expand GlassNotes")

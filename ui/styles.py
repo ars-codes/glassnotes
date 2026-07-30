@@ -2,34 +2,28 @@
 
 FONT_FAMILY = '"Segoe UI Variable", "Segoe UI", sans-serif'
 
-CORNER_RADIUS = 12
+CORNER_RADIUS = 15
 
 # Base widget — dark translucent glass background for native acrylic/mica
 BASE_STYLE = f"""
 QWidget#glassRoot {{
-    background: rgba(12, 18, 48, 180);
-    border: 1px solid rgba(190, 210, 255, 90);
+    background: rgba(32, 36, 44, 77); /* 30% opacity */
+    border: 1px solid rgba(255, 255, 255, 15); /* Very subtle rim */
     border-radius: {CORNER_RADIUS}px;
     font-family: {FONT_FAMILY};
-    color: #E8F4FF;
+    color: #FFFFFF;
 }}
 """
 
 # Fallback when native acrylic is unavailable
 FALLBACK_STYLE = f"""
 QWidget#glassRoot {{
-    /* deep navy / indigo vertical gradient with a subtle top gloss stop */
-    background: qlineargradient(
-        x1:0, y1:0, x2:0, y2:1,
-        stop:0 rgba(20, 30, 70, 224),      /* rich saturated navy at top */
-        stop:0.06 rgba(60, 90, 200, 15),   /* thin glossy top inner highlight */
-        stop:1 rgba(10, 14, 40, 235)       /* darker deep-blue at bottom */
-    );
-    /* rim-light: slightly cool, brighter thin border to read as rim */
-    border: 1px solid rgba(190, 210, 255, 90);
+    /* Sleek dark fallback matching Thick dark 2, but translucent */
+    background: rgba(32, 36, 44, 77);
+    border: 1px solid rgba(255, 255, 255, 15);
     border-radius: {CORNER_RADIUS}px;
     font-family: {FONT_FAMILY};
-    color: #E8F4FF; /* slightly cool white for legibility on blue */
+    color: #FFFFFF;
 }}
 """
 
@@ -41,7 +35,7 @@ QWidget#headerBar {
     max-height: 32px;
 }
 QLabel#titleLabel {
-    color: rgba(234, 244, 255, 184);
+    color: rgba(255, 255, 255, 210);
     font-size: 11px;
     font-weight: 500;
     padding-left: 4px;
@@ -52,7 +46,7 @@ QPushButton#headerBtn {
     background: transparent;
     border: none;
     border-radius: 6px;
-    color: rgba(255, 255, 255, 166);
+    color: rgba(255, 255, 255, 160);
     font-size: 14px;
     min-width: 28px;
     max-width: 28px;
@@ -64,7 +58,7 @@ QPushButton#closeBtn {
     background: transparent;
     border: none;
     border-radius: 6px;
-    color: rgba(255, 255, 255, 166);
+    color: rgba(255, 255, 255, 160);
     font-size: 14px;
     min-width: 28px;
     max-width: 28px;
@@ -73,16 +67,15 @@ QPushButton#closeBtn {
     padding: 0;
 }
 QPushButton#closeBtn:hover {
-    background: rgba(232, 17, 35, 191);
+    background: rgba(232, 17, 35, 190);
     color: white;
 }
 QPushButton#headerBtn:hover {
-    /* cool blue hover glow */
-    background: rgba(100, 150, 255, 31);
-    color: rgba(235, 246, 255, 250);
+    background: rgba(255, 255, 255, 30);
+    color: #FFFFFF;
 }
 QPushButton#headerBtn:pressed {
-    background: rgba(60, 110, 220, 26);
+    background: rgba(255, 255, 255, 15);
 }
 """
 
@@ -90,13 +83,12 @@ EDITOR_STYLE = """
 QPlainTextEdit#noteEditor {
     background: transparent;
     border: none;
-    color: #F0F0F0;
+    color: #FFFFFF;
     font-family: """ + FONT_FAMILY + """;
     font-size: 13px;
     line-height: 1.45;
     padding: 4px 10px 8px 10px;
-    /* slightly richer selection tint to match blue theme */
-    selection-background-color: rgba(100, 150, 255, 128);
+    selection-background-color: rgba(255, 255, 255, 50);
     selection-color: #FFFFFF;
 }
 QPlainTextEdit#noteEditor QScrollBar:vertical {
@@ -105,7 +97,7 @@ QPlainTextEdit#noteEditor QScrollBar:vertical {
     margin: 2px 2px 2px 0;
 }
 QPlainTextEdit#noteEditor QScrollBar::handle:vertical {
-    background: rgba(255, 255, 255, 56);
+    background: rgba(255, 255, 255, 60);
     border-radius: 3px;
     min-height: 24px;
 }
@@ -136,56 +128,39 @@ QWidget#resizeHandle:hover {
 
 COLLAPSED_STYLE = """
 QPushButton#collapsedIcon {
-    /* jeweled radial: brighter center, deep outer rim */
-    background: qradialgradient(
-        cx:0.5, cy:0.5, radius:0.85,
-        fx:0.5, fy:0.5,
-        stop:0 rgba(70, 110, 230, 178),   /* jewel-blue center glow */
-        stop:0.6 rgba(30, 60, 150, 128),
-        stop:1 rgba(15, 20, 55, 242)     /* deep outer edge */
-    );
-    border: 1px solid rgba(190, 210, 255, 90);
-    border-radius: 24px;
-    color: #EAF4FF;
+    background: rgba(32, 36, 44, 77);
+    border: 1px solid rgba(255, 255, 255, 15);
+    border-radius: 32px;
+    color: #FFFFFF;
     font-size: 18px;
     font-weight: 600;
-    min-width: 48px;
-    max-width: 48px;
-    min-height: 48px;
-    max-height: 48px;
+    min-width: 64px;
+    max-width: 64px;
+    min-height: 64px;
+    max-height: 64px;
     padding: 0;
-    qproperty-iconSize: 26px 26px;
+    qproperty-iconSize: 64px 64px;
 }
 QPushButton#collapsedIcon:hover {
-    border-color: rgba(220, 235, 255, 128);
-    background: qradialgradient(
-        cx:0.5, cy:0.5, radius:0.85,
-        fx:0.5, fy:0.5,
-        stop:0 rgba(90, 130, 250, 199),
-        stop:1 rgba(18, 26, 70, 250)
-    );
+    border-color: rgba(255, 255, 255, 80);
+    background: rgba(35, 35, 35, 160);
 }
 """
 
 COLLAPSED_FALLBACK_STYLE = """
 QPushButton#collapsedIcon {
-    background: qradialgradient(
-        cx:0.5, cy:0.5, radius:0.85,
-        fx:0.5, fy:0.5,
-        stop:0 rgba(70, 110, 230, 178),
-        stop:1 rgba(15, 20, 55, 242)
-    );
-    border: 1px solid rgba(190, 210, 255, 90);
-    border-radius: 24px;
-    color: #EAF4FF;
+    background: rgba(32, 36, 44, 77);
+    border: 1px solid rgba(255, 255, 255, 15);
+    border-radius: 32px;
+    color: #FFFFFF;
     font-size: 18px;
     font-weight: 600;
-    min-width: 48px;
-    max-width: 48px;
-    min-height: 48px;
-    max-height: 48px;
+    min-width: 64px;
+    max-width: 64px;
+    min-height: 64px;
+    max-height: 64px;
     padding: 0;
-    qproperty-iconSize: 26px 26px;
+    qproperty-iconSize: 64px 64px;
 }
 """
 
