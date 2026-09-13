@@ -7,12 +7,14 @@ from pathlib import Path
 block_cipher = None
 project_root = Path(SPECPATH).resolve().parent
 main_script = project_root / "main.py"
-icon_path = project_root / "assets" / "icon.ico"
+icon_path = project_root / "assets" / "floatnote_icon.ico"
+if not icon_path.is_file():
+    icon_path = project_root / "assets" / "icon.ico"
 png_path = project_root / "floatnote.png"
 
 manifest = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity type="win32" name="FloatNote" version="1.0.0.0" processorArchitecture="*"/>
+  <assemblyIdentity type="win32" name="FloatNote" version="2.0.0.0" processorArchitecture="*"/>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
@@ -30,8 +32,9 @@ manifest = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 """
 
 datas_list = []
-if icon_path.is_file():
-    datas_list.append((str(icon_path), "assets"))
+assets_dir = project_root / "assets"
+if assets_dir.is_dir():
+    datas_list.append((str(assets_dir), "assets"))
 if png_path.is_file():
     datas_list.append((str(png_path), "."))
 

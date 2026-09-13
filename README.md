@@ -25,10 +25,10 @@ pyinstaller build/floatnote.spec
 Then compile the installer with [Inno Setup 6](https://jrsoftware.org/isinfo.php):
 
 ```powershell
-& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" build\installer.iss
+iscc floatnote.iss
 ```
 
-The setup executable is written to `build\output\FloatNoteSetup.exe`. It installs FloatNote to `%LOCALAPPDATA%\FloatNote` and adds a Start Menu shortcut.
+The setup executable is written to `dist\FloatNoteSetup.exe`. It installs FloatNote to `%LOCALAPPDATA%\FloatNote` and adds a Start Menu shortcut.
 
 ## SmartScreen Notice
 

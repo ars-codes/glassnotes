@@ -1,7 +1,7 @@
 ; Inno Setup script for FloatNote
 
 #define MyAppName "FloatNote"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "FloatNote"
 #define MyAppExeName "FloatNote.exe"
 #define MyAppId "{A7B3C4D5-E6F7-4890-ABCD-EF1234567890}"
@@ -16,7 +16,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
 OutputBaseFilename=FloatNoteSetup
-SetupIconFile=..\assets\icon.ico
+SetupIconFile=..\assets\floatnote_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/ultra64
 SolidCompression=yes

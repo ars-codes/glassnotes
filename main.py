@@ -32,10 +32,13 @@ def resource_path(relative: str) -> Path:
 
 
 def load_app_icon() -> QIcon:
+    ico_v2 = resource_path("assets/floatnote_icon.ico")
+    if ico_v2.is_file():
+        return QIcon(str(ico_v2))
     ico = resource_path("assets/icon.ico")
     if ico.is_file():
         return QIcon(str(ico))
-    png = Path(__file__).resolve().parent / "floatnote.png"
+    png = resource_path("floatnote.png")
     if png.is_file():
         return QIcon(str(png))
     return QIcon()
@@ -63,7 +66,7 @@ def main() -> int:
 
     widget = FloatNoteWidget()
     widget.setWindowIcon(icon)
-    widget.initialize(storage.load_notes())
+    widget.initialize()
 
     hotkey = GlobalHotkeyManager()
     hotkey.activated.connect(widget.toggle_visibility)
