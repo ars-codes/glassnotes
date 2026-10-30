@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import ctypes
+import logging
 from ctypes import WINFUNCTYPE, byref, c_int, c_void_p, windll
 from ctypes.wintypes import DWORD, HINSTANCE, HWND, LPARAM, MSG, UINT, WPARAM
 
-from PySide6.QtCore import QAbstractNativeEventFilter, QObject, Signal
+from PySide6.QtCore import QAbstractNativeEventFilter, QObject, QTimer, Signal
+
+logger = logging.getLogger(__name__)
 
 # Win32 constants
 WM_HOTKEY = 0x0312
@@ -115,7 +118,7 @@ class _HotkeyWindow:
 
 
 class HotkeyNativeEventFilter(QAbstractNativeEventFilter):
-    """Also listen for WM_HOTKEY on the Qt main window as a backup path."""
+    """Also listen for WM_HOTKEY on the Qt main message queue as a backup path."""
 
     def __init__(self, callback) -> None:
         super().__init__()
@@ -145,6 +148,8 @@ class GlobalHotkeyManager(QObject):
         self._hotkey_window: _HotkeyWindow | None = None
         self._filter: HotkeyNativeEventFilter | None = None
         self._registered = False
+        self._retry_timer: QTimer | None = None
+        self._retries_left = 10
 
     def register(self) -> bool:
         """Create message window and register the global hotkey."""
@@ -154,9 +159,12 @@ class GlobalHotkeyManager(QObject):
         def on_hotkey():
             self.activated.emit()
 
-        self._hotkey_window = _HotkeyWindow(on_hotkey)
-        if not self._hotkey_window.create():
-            return False
+        if self._hotkey_window is None:
+            self._hotkey_window = _HotkeyWindow(on_hotkey)
+            if not self._hotkey_window.create():
+                self._hotkey_window = None
+                self._schedule_retry()
+                return False
 
         vk_n = ord("N")
         ok = user32.RegisterHotKey(
@@ -166,9 +174,15 @@ class GlobalHotkeyManager(QObject):
             vk_n,
         )
         if not ok:
+            err = kernel32.GetLastError()
+            logger.warning("RegisterHotKey failed with error %s; scheduling retry.", err)
             self._hotkey_window.destroy()
             self._hotkey_window = None
+            self._schedule_retry()
             return False
+
+        if self._retry_timer and self._retry_timer.isActive():
+            self._retry_timer.stop()
 
         self._filter = HotkeyNativeEventFilter(on_hotkey)
         from PySide6.QtWidgets import QApplication
@@ -180,8 +194,25 @@ class GlobalHotkeyManager(QObject):
         self._registered = True
         return True
 
+    def _schedule_retry(self) -> None:
+        if self._retries_left <= 0:
+            return
+        self._retries_left -= 1
+        if self._retry_timer is None:
+            self._retry_timer = QTimer(self)
+            self._retry_timer.setSingleShot(True)
+            self._retry_timer.timeout.connect(self._on_retry_timeout)
+        self._retry_timer.start(1500)
+
+    def _on_retry_timeout(self) -> None:
+        if not self._registered:
+            self.register()
+
     def unregister(self) -> None:
         """Release hotkey and destroy message window."""
+        if self._retry_timer and self._retry_timer.isActive():
+            self._retry_timer.stop()
+
         if self._hotkey_window and self._hotkey_window.hwnd:
             user32.UnregisterHotKey(HWND(self._hotkey_window.hwnd), HOTKEY_ID)
 
@@ -189,7 +220,10 @@ class GlobalHotkeyManager(QObject):
 
         app = QApplication.instance()
         if app and self._filter:
-            app.removeNativeEventFilter(self._filter)
+            try:
+                app.removeNativeEventFilter(self._filter)
+            except Exception:
+                pass
 
         if self._hotkey_window:
             self._hotkey_window.destroy()

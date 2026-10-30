@@ -165,6 +165,11 @@ def list_notes_in_category(category: str) -> list[str]:
     return notes
 
 
+def get_category_path(category: str) -> Path:
+    """Return full Path to a category folder."""
+    return NOTES_ROOT / category
+
+
 def get_note_path(category: str, filename: str) -> Path:
     """Return full Path to a note file."""
     return NOTES_ROOT / category / filename

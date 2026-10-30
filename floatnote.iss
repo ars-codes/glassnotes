@@ -1,22 +1,27 @@
 ; Inno Setup Script for FloatNote
 #define MyAppName "FloatNote"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.0.2"
 #define MyAppPublisher "FloatNote"
 #define MyAppExeName "FloatNote.exe"
+#define MyAppId "{A7B3C4D5-E6F7-4890-ABCD-EF1234567890}"
 
 [Setup]
-AppId={{D37F8A52-9A7B-4B6A-B7F2-7E1A613E99A1}
+; Permanently fixed AppId matching v1 so upgrades cleanly replace existing installs without duplicate side-by-side installations
+AppId={{#MyAppId}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={autopf}\{#MyAppName}
+DefaultDirName={localappdata}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=FloatNoteSetup
+OutputBaseFilename=FloatNoteSetup-{#MyAppVersion}
 OutputDir=dist
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+PrivilegesRequired=lowest
+CloseApplications=yes
+RestartApplications=no
 SetupIconFile=assets\floatnote_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
@@ -27,6 +32,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
+; Only replaces application executable in {app} ({localappdata}\FloatNote).
+; NEVER touches, modifies, or deletes the user's notes in Documents\FloatNote.
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]

@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QDialog,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -22,7 +24,7 @@ from ui import styles
 
 
 class BaseGlassDialog(QDialog):
-    """Base dialog styled with FloatNote's deep-blue glass theme."""
+    """Base dialog styled with an elevated charcoal surface and drop shadow."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -33,7 +35,13 @@ class BaseGlassDialog(QDialog):
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setStyleSheet(styles.DIALOG_STYLE)
-        self.setFixedWidth(280)
+        self.setFixedWidth(272)
+
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(24)
+        shadow.setColor(QColor(0, 0, 0, 180))
+        shadow.setOffset(0, 4)
+        self.setGraphicsEffect(shadow)
 
 
 class NewNoteDialog(BaseGlassDialog):
@@ -53,7 +61,7 @@ class NewNoteDialog(BaseGlassDialog):
         layout.setSpacing(12)
 
         title_lbl = QLabel("Create New Note", self)
-        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #a5d2ff;")
+        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #FFFFFF;")
         layout.addWidget(title_lbl)
 
         # Name input
@@ -100,7 +108,7 @@ class NewNoteDialog(BaseGlassDialog):
 
         # Error label
         self._error_lbl = QLabel("", self)
-        self._error_lbl.setStyleSheet("color: #ff8a8a; font-size: 11px;")
+        self._error_lbl.setStyleSheet("color: #ff8585; font-size: 11px;")
         self._error_lbl.hide()
         layout.addWidget(self._error_lbl)
 
@@ -184,7 +192,7 @@ class NewFolderDialog(BaseGlassDialog):
         layout.setSpacing(12)
 
         title_lbl = QLabel("Create New Folder", self)
-        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #a5d2ff;")
+        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #FFFFFF;")
         layout.addWidget(title_lbl)
 
         name_lbl = QLabel("Folder Name:", self)
@@ -194,7 +202,7 @@ class NewFolderDialog(BaseGlassDialog):
         layout.addWidget(self._name_edit)
 
         self._error_lbl = QLabel("", self)
-        self._error_lbl.setStyleSheet("color: #ff8a8a; font-size: 11px;")
+        self._error_lbl.setStyleSheet("color: #ff8585; font-size: 11px;")
         self._error_lbl.hide()
         layout.addWidget(self._error_lbl)
 
@@ -240,7 +248,7 @@ class RenameNoteDialog(BaseGlassDialog):
         layout.setSpacing(12)
 
         title_lbl = QLabel("Rename Note", self)
-        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #a5d2ff;")
+        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #FFFFFF;")
         layout.addWidget(title_lbl)
 
         # Display clean stem in edit field
@@ -255,7 +263,7 @@ class RenameNoteDialog(BaseGlassDialog):
         layout.addWidget(self._name_edit)
 
         self._error_lbl = QLabel("", self)
-        self._error_lbl.setStyleSheet("color: #ff8a8a; font-size: 11px;")
+        self._error_lbl.setStyleSheet("color: #ff8585; font-size: 11px;")
         self._error_lbl.hide()
         layout.addWidget(self._error_lbl)
 
@@ -311,7 +319,7 @@ class ConfirmDialog(BaseGlassDialog):
         layout.setSpacing(14)
 
         title_lbl = QLabel(title, self)
-        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #ffa8a8;")
+        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #ff8585;")
         layout.addWidget(title_lbl)
 
         msg_lbl = QLabel(message, self)
@@ -330,10 +338,46 @@ class ConfirmDialog(BaseGlassDialog):
         action_btn = QPushButton(confirm_text, self)
         action_btn.setObjectName("dialogBtn")
         action_btn.setStyleSheet(
-            "QPushButton#dialogBtn { background: rgba(220, 40, 50, 160); border: 1px solid rgba(255, 120, 120, 80); }"
-            "QPushButton#dialogBtn:hover { background: rgba(240, 55, 65, 200); }"
+            "QPushButton#dialogBtn { background: rgba(220, 53, 69, 190); border: 1px solid rgba(255, 120, 120, 90); }"
+            "QPushButton#dialogBtn:hover { background: rgba(235, 65, 80, 220); }"
         )
         action_btn.clicked.connect(self.accept)
         btn_row.addWidget(action_btn)
 
         layout.addLayout(btn_row)
+
+
+class AlertDialog(BaseGlassDialog):
+    """Informational or error alert dialog styled consistently with FloatNote."""
+
+    def __init__(
+        self,
+        title: str,
+        message: str,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(title)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(14)
+
+        title_lbl = QLabel(title, self)
+        title_lbl.setStyleSheet("font-size: 14px; font-weight: 600; color: #ff8585;")
+        layout.addWidget(title_lbl)
+
+        msg_lbl = QLabel(message, self)
+        msg_lbl.setWordWrap(True)
+        layout.addWidget(msg_lbl)
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+
+        ok_btn = QPushButton("OK", self)
+        ok_btn.setObjectName("dialogBtn")
+        ok_btn.clicked.connect(self.accept)
+        btn_row.addWidget(ok_btn)
+
+        layout.addLayout(btn_row)
+

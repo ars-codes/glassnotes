@@ -148,10 +148,10 @@ def _apply_composition_acrylic(hwnd: int, dark: bool) -> bool:
     except (OSError, AttributeError):
         return False
 
-    # ABGR: 0xAA_BB_GG_RR — saturated navy/deep blue glass tint
-    # Alpha ~0x8A (138/255), Blue 0x3C (60), Green 0x19 (25), Red 0x14 (20)
+    # ABGR: 0xAA_BB_GG_RR — neutral charcoal/gray glass tint
+    # Alpha ~0x8A (138/255), Blue 0x14 (20), Green 0x14 (20), Red 0x14 (20)
     if dark:
-        gradient_color = 0x8A3C1914
+        gradient_color = 0x8A141414
     else:
         gradient_color = 0x82F0F0F0
 
@@ -185,7 +185,7 @@ def _apply_blur_behind(hwnd: int, dark: bool) -> bool:
         return False
 
     if dark:
-        gradient_color = 0xCC3C1914
+        gradient_color = 0xCC141414
     else:
         gradient_color = 0xCCF0F0F0
 

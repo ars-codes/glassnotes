@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import signal
 import sys
@@ -10,6 +11,11 @@ from pathlib import Path
 # High-DPI setup must happen before QApplication is created.
 os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "1")
 os.environ.setdefault("QT_SCALE_FACTOR_ROUNDING_POLICY", "PassThrough")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QIcon
@@ -44,13 +50,32 @@ def load_app_icon() -> QIcon:
     return QIcon()
 
 
+def acquire_single_instance() -> tuple[object | None, bool]:
+    """Ensure only one instance runs to avoid hotkey and file conflicts."""
+    if sys.platform != "win32":
+        return None, True
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    mutex_name = "FloatNote_SingleInstance_Mutex_A7B3C4D5"
+    mutex = kernel32.CreateMutexW(None, False, mutex_name)
+    last_err = kernel32.GetLastError()
+    # ERROR_ALREADY_EXISTS = 183
+    if last_err == 183:
+        return mutex, False
+    return mutex, True
+
+
 def open_notes_folder() -> None:
-    folder = storage.NOTES_DIR
     storage.ensure_dirs()
-    os.startfile(str(folder))
+    os.startfile(str(storage.NOTES_ROOT))
 
 
 def main() -> int:
+    _mutex, is_single = acquire_single_instance()
+    if not is_single:
+        # Another instance is already running; avoid hotkey stealing and file conflicts
+        return 0
+
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
@@ -128,7 +153,7 @@ def main() -> int:
     show_hide_action.triggered.connect(on_show)
     hide_action.triggered.connect(on_hide)
     autostart_action.triggered.connect(on_autostart_toggled)
-    open_folder_action.triggered.connect(open_notes_folder)
+    open_folder_action.triggered.connect(widget.open_notes_folder)
     exit_action.triggered.connect(on_exit)
     widget.visibility_changed.connect(sync_tray_show_hide)
 

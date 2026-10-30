@@ -1,7 +1,12 @@
-; Inno Setup script for FloatNote
+; ==============================================================================
+; DEPRECATED: This installer script is retained for reference only.
+; The canonical and official Inno Setup script is located at the project root:
+;   ..\floatnote.iss (compiled via: iscc floatnote.iss)
+; ==============================================================================
+; Inno Setup script for FloatNote (Legacy / Reference Only)
 
 #define MyAppName "FloatNote"
-#define MyAppVersion "2.0.0"
+#define MyAppVersion "2.0.2"
 #define MyAppPublisher "FloatNote"
 #define MyAppExeName "FloatNote.exe"
 #define MyAppId "{A7B3C4D5-E6F7-4890-ABCD-EF1234567890}"
@@ -15,7 +20,7 @@ DefaultDirName={localappdata}\FloatNote
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=output
-OutputBaseFilename=FloatNoteSetup
+OutputBaseFilename=FloatNoteSetup-{#MyAppVersion}
 SetupIconFile=..\assets\floatnote_icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2/ultra64
@@ -23,6 +28,8 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64compatible
+CloseApplications=yes
+RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

@@ -8,10 +8,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from PySide6.QtCore import QRect
-from PySide6.QtGui import QTextDocument
+from PySide6.QtCore import QPointF, QRect, Qt
+from PySide6.QtGui import QIcon, QMouseEvent, QTextDocument
+from PySide6.QtWidgets import QApplication
 
 from core import acrylic, storage
+from core.hotkey import GlobalHotkeyManager
 from ui import styles
 
 
@@ -126,10 +128,10 @@ class TestSmartAnchoring(unittest.TestCase):
         screen_avail = QRect(0, 0, 1920, 1080)
         screen_center_x = screen_avail.x() + screen_avail.width() / 2.0  # 960
 
-        # Collapsed widget at x=100, width=64
+        # Collapsed widget at x=100, width=44
         pos_x, pos_y = 100, 100
-        collapsed_w, collapsed_h = 64, 64
-        widget_center_x = pos_x + collapsed_w / 2.0  # 132 < 960 (left side)
+        collapsed_w, collapsed_h = 44, 44
+        widget_center_x = pos_x + collapsed_w / 2.0  # 122 < 960 (left side)
         self.assertLess(widget_center_x, screen_center_x)
 
         # Expand: top-left anchored
@@ -145,11 +147,11 @@ class TestSmartAnchoring(unittest.TestCase):
         screen_center_x = screen_avail.x() + screen_avail.width() / 2.0  # 960
 
         fixed_w = 288
-        collapsed_size = 64
+        collapsed_size = 44
 
-        # Collapsed near right edge: x=1840, right edge = 1904
-        pos_x, pos_y = 1840, 100
-        widget_center_x = pos_x + collapsed_size / 2.0  # 1872 > 960 (right side)
+        # Collapsed near right edge: x=1860, right edge = 1904
+        pos_x, pos_y = 1860, 100
+        widget_center_x = pos_x + collapsed_size / 2.0  # 1882 > 960 (right side)
         self.assertGreater(widget_center_x, screen_center_x)
 
         # Expand: pinned top-right
@@ -161,39 +163,45 @@ class TestSmartAnchoring(unittest.TestCase):
         # Collapse from expanded at x=1616, width=288 (right edge = 1904)
         expanded_x = 1616
         collapse_target_x = (expanded_x + fixed_w) - collapsed_size
-        self.assertEqual(collapse_target_x, 1840)
+        self.assertEqual(collapse_target_x, 1860)
         # Verify collapsed right edge coordinate is preserved
         self.assertEqual(collapse_target_x + collapsed_size, expanded_x + fixed_w)  # 1904 == 1904!
 
 
 class TestVisualThemeAndMarkdown(unittest.TestCase):
-    """Test deep-blue glass styles and Markdown rendering setup."""
+    """Test neutral charcoal glass styles (Fix 1) and Markdown rendering setup."""
 
     def test_acrylic_tint_abgr(self) -> None:
-        """Check that acrylic tint is saturated navy ABGR."""
-        # Alpha: 0x8A (138), Blue: 0x3C (60), Green: 0x19 (25), Red: 0x14 (20)
-        abgr_expected = 0x8A3C1914
-        # Verify ABGR byte values
+        """Check that acrylic tint is neutral charcoal ABGR (Fix 1)."""
+        # Alpha: 0x8A (138), Blue: 0x14 (20), Green: 0x14 (20), Red: 0x14 (20)
+        abgr_expected = 0x8A141414
         alpha = (abgr_expected >> 24) & 0xFF
         blue = (abgr_expected >> 16) & 0xFF
         green = (abgr_expected >> 8) & 0xFF
         red = abgr_expected & 0xFF
         self.assertEqual(alpha, 0x8A)
-        self.assertEqual(blue, 60)
-        self.assertEqual(green, 25)
+        self.assertEqual(blue, 20)
+        self.assertEqual(green, 20)
         self.assertEqual(red, 20)
 
     def test_styles_output(self) -> None:
-        """Verify QSS generation contains deep-blue colors and rim borders."""
+        """Verify QSS generation contains neutral charcoal/gray palette and valid syntax."""
         exp_qss = styles.expanded_styles(use_fallback=False)
-        self.assertIn("rgba(18, 34, 75", exp_qss)
-        self.assertIn("border-top: 1px solid rgba(190, 225, 255", exp_qss)
+        self.assertIn("rgba(32, 36, 44", exp_qss)
+        self.assertIn("border-top: 1px solid rgba(255, 255, 255", exp_qss)
         self.assertIn("noteEditor", exp_qss)
         self.assertIn("notePreview", exp_qss)
+        self.assertIn("resizeHandle", exp_qss)
 
         col_qss = styles.collapsed_styles(use_fallback=False)
         self.assertIn("collapsedIcon", col_qss)
         self.assertIn("qradialgradient", col_qss)
+        self.assertIn(f"min-width: {styles.COLLAPSED_SIZE}px", col_qss)
+        # Verify no broken double-brace syntax in output
+        self.assertNotIn("{{", exp_qss)
+        self.assertNotIn("}}", exp_qss)
+        self.assertNotIn("{{", col_qss)
+        self.assertNotIn("}}", col_qss)
 
     def test_markdown_rendering(self) -> None:
         """Verify QTextDocument markdown parser converts headers and task items."""
@@ -280,6 +288,336 @@ class TestWidgetIntegration(unittest.TestCase):
         dlg4 = ConfirmDialog("Title", "Message")
         self.assertIsNotNone(dlg4)
         dlg4.close()
+
+    def test_fix2_scrim_overlay_exists(self) -> None:
+        """Verify Fix 2: ScrimOverlay is initialized on widget and handles dimming."""
+        from ui.widget import FloatNoteWidget
+        widget = FloatNoteWidget()
+        self.assertTrue(hasattr(widget, "_scrim"))
+        self.assertFalse(widget._scrim.isVisible())
+        widget.close()
+
+    def test_fix3_resize_handle_and_ceiling(self) -> None:
+        """Verify Fix 3: ResizeHandle has valid height and raises max ceiling to full screen."""
+        from ui.widget import FloatNoteWidget
+        widget = FloatNoteWidget()
+        widget.initialize()
+        self.assertGreaterEqual(widget._resize_handle.height(), 6)
+        # Test max height is not artificially capped at 80%
+        max_h = widget._max_height()
+        self.assertGreaterEqual(max_h, 600)
+        widget.close()
+
+    def test_fix4_collapsed_size(self) -> None:
+        """Verify Round 2 Fix A: Collapsed size is 58 (10% reduction from original 64)."""
+        from ui.styles import COLLAPSED_RADIUS, COLLAPSED_SIZE as STYLE_COLLAPSED_SIZE
+        from ui.widget import COLLAPSED_SIZE
+        self.assertEqual(COLLAPSED_SIZE, 58)
+        self.assertEqual(STYLE_COLLAPSED_SIZE, 58)
+        self.assertEqual(COLLAPSED_RADIUS, 29)
+        self.assertIn("58px", styles.COLLAPSED_STYLE)
+        self.assertIn("29px", styles.COLLAPSED_STYLE)
+
+    def test_fix5_open_notes_folder_target(self) -> None:
+        """Verify Fix 5: target folder points to notes directory, not parent app data."""
+        storage.ensure_dirs()
+        target = storage.get_category_path("General")
+        self.assertTrue(str(target).startswith(str(storage.NOTES_ROOT)))
+        self.assertNotEqual(target, storage.NOTES_DIR)
+
+    def test_fix7_fixed_appid_in_installer(self) -> None:
+        """Verify Fix 7: floatnote.iss uses permanently fixed AppId and localappdata."""
+        iss_path = Path("floatnote.iss")
+        content = iss_path.read_text(encoding="utf-8")
+        self.assertIn('{A7B3C4D5-E6F7-4890-ABCD-EF1234567890}', content)
+        self.assertIn('{localappdata}', content)
+        # Ensure installer does NOT delete user notes
+        self.assertNotIn('{userdocs}', content)
+
+    def test_round2_fix_b_clamp_to_screen_small_window(self) -> None:
+        """Verify Round 2 Fix B: Collapsed window with size < 50px passes screen clamping."""
+        from ui.widget import FloatNoteWidget, MIN_VISIBLE
+        widget = FloatNoteWidget()
+        widget.initialize()
+        widget._collapsed = True
+        widget.setFixedSize(58, 58)
+
+        # Position widget at a valid coordinate on screen
+        widget.move(120, 120)
+        widget._clamp_to_screen()
+        # Should stay at (120, 120), NOT recenter
+        self.assertEqual(widget.x(), 120)
+        self.assertEqual(widget.y(), 120)
+
+        # Even with a test size smaller than MIN_VISIBLE (e.g. 40x40):
+        widget.setFixedSize(40, 40)
+        widget.move(140, 140)
+        widget._clamp_to_screen()
+        self.assertEqual(widget.x(), 140)
+        self.assertEqual(widget.y(), 140)
+        widget.close()
+
+    def test_round2_fix_c_dialog_blur_and_borders(self) -> None:
+        """Verify Round 2 Fix C: Blur applied during exec_dialog, cleared in finally, and dialog borders."""
+        from PySide6.QtWidgets import QDialog, QGraphicsBlurEffect
+        from ui.widget import FloatNoteWidget
+
+        # Verify border styling in DIALOG_STYLE
+        self.assertIn("border-top: 1.5px solid rgba(255, 255, 255, 120)", styles.DIALOG_STYLE)
+        self.assertIn("border-bottom: 1.5px solid rgba(255, 255, 255, 95)", styles.DIALOG_STYLE)
+
+        widget = FloatNoteWidget()
+        widget.initialize()
+        self.assertIsNone(widget._expanded_container.graphicsEffect())
+
+        # Test dummy dialog that verifies blur is active during exec
+        class MockDialog(QDialog):
+            def __init__(self, main_w, parent=None):
+                super().__init__(parent)
+                self.main_w = main_w
+                self.blur_was_active = False
+
+            def exec(self):
+                effect = self.main_w._expanded_container.graphicsEffect()
+                if isinstance(effect, QGraphicsBlurEffect) and effect.blurRadius() == 8.0:
+                    self.blur_was_active = True
+                return QDialog.DialogCode.Accepted
+
+        mock_dlg = MockDialog(widget, parent=widget)
+        res = widget.exec_dialog(mock_dlg)
+        self.assertEqual(res, QDialog.DialogCode.Accepted)
+        self.assertTrue(mock_dlg.blur_was_active, "Blur effect must be active during dialog execution")
+        self.assertIsNone(widget._expanded_container.graphicsEffect(), "Blur effect must be cleared after dialog closes")
+        widget.close()
+
+    def test_installer_version_bump_v2_0_2(self) -> None:
+        """Verify Release Notes: floatnote.iss is bumped to 2.0.2 with versioned installer filename."""
+        iss_path = Path("floatnote.iss")
+        content = iss_path.read_text(encoding="utf-8")
+        self.assertIn('#define MyAppVersion "2.0.2"', content)
+        self.assertIn('OutputBaseFilename=FloatNoteSetup-{#MyAppVersion}', content)
+        self.assertIn('{A7B3C4D5-E6F7-4890-ABCD-EF1234567890}', content)
+
+        legacy_iss = Path("build/installer.iss")
+        legacy_content = legacy_iss.read_text(encoding="utf-8")
+        self.assertIn("DEPRECATED", legacy_content)
+        self.assertIn('#define MyAppVersion "2.0.2"', legacy_content)
+
+    def test_fix1_delete_note_flush_false_and_no_recreation(self) -> None:
+        """Verify Fix 1: Deleting a note cancels pending save and never recreates file."""
+        from unittest.mock import patch
+        from ui.widget import FloatNoteWidget
+        widget = FloatNoteWidget()
+        storage.create_note("General", "NoteA.md", "Content A")
+        storage.create_note("General", "NoteB.md", "Content B")
+        widget.initialize(category="General", filename="NoteA.md")
+
+        # Type in editor to trigger autosave debounce timer (< 500ms)
+        widget._editor.setPlainText("Unsaved content for Note A")
+        self.assertTrue(widget._save_timer.isActive())
+
+        # Mock confirm dialog to accept
+        with patch.object(widget, "exec_dialog", return_value=True):
+            widget._delete_active_note()
+
+        # Check save timer was stopped
+        self.assertFalse(widget._save_timer.isActive())
+        # NoteA should be deleted from disk
+        self.assertFalse((storage.NOTES_ROOT / "General" / "NoteA.md").is_file())
+        # Active note switched to NoteB
+        self.assertEqual(widget._active_note, "NoteB.md")
+        self.assertEqual(widget._editor.toPlainText(), "Content B")
+
+        # Simulate quit-time flush: must NOT recreate NoteA
+        widget.flush_pending_save()
+        self.assertFalse((storage.NOTES_ROOT / "General" / "NoteA.md").is_file())
+        self.assertTrue((storage.NOTES_ROOT / "General" / "NoteB.md").is_file())
+        widget.close()
+
+    def test_fix1_delete_last_note_creates_starter(self) -> None:
+        """Verify Fix 1: Deleting the last remaining note recreates starter note."""
+        from unittest.mock import patch
+        from ui.widget import FloatNoteWidget
+        widget = FloatNoteWidget()
+        # Clean out all notes
+        for cat in storage.list_categories():
+            for n in storage.list_notes_in_category(cat):
+                storage.delete_note(cat, n)
+
+        storage.create_note("General", "SoleNote.md", "Only one")
+        widget.initialize(category="General", filename="SoleNote.md")
+
+        with patch.object(widget, "exec_dialog", return_value=True):
+            widget._delete_active_note()
+
+        self.assertFalse((storage.NOTES_ROOT / "General" / "SoleNote.md").is_file())
+        self.assertEqual(widget._active_note, storage.DEFAULT_NOTE_NAME)
+        self.assertTrue((storage.NOTES_ROOT / "General" / storage.DEFAULT_NOTE_NAME).is_file())
+        widget.close()
+
+    def test_fix1_delete_failure_shows_alert(self) -> None:
+        """Verify Fix 1: If storage.delete_note returns False, error dialog is shown."""
+        from unittest.mock import patch
+        from ui.widget import FloatNoteWidget
+        from ui.dialogs import AlertDialog
+        widget = FloatNoteWidget()
+        storage.create_note("General", "Protected.md", "Safe")
+        widget.initialize(category="General", filename="Protected.md")
+
+        dialogs_shown = []
+        def mock_exec_dialog(dlg):
+            dialogs_shown.append(dlg)
+            return True
+
+        with patch.object(storage, "delete_note", return_value=False):
+            with patch.object(widget, "exec_dialog", side_effect=mock_exec_dialog):
+                widget._delete_active_note()
+
+        # An AlertDialog should have been executed
+        alert_shown = any(isinstance(d, AlertDialog) for d in dialogs_shown)
+        self.assertTrue(alert_shown)
+        self.assertEqual(widget._active_note, "Protected.md")
+        widget.close()
+
+    def test_fix2_right_anchored_collapse_preserves_right_edge(self) -> None:
+        """Verify Fix 2: Right side collapse animation keeps right edge identical."""
+        from ui.widget import FloatNoteWidget, FIXED_WIDTH, COLLAPSED_SIZE
+        widget = FloatNoteWidget()
+        widget.initialize()
+        screen = QApplication.primaryScreen()
+        avail = screen.availableGeometry() if screen else QRect(0, 0, 1920, 1080)
+        x = avail.x() + avail.width() - FIXED_WIDTH - 20
+        y = avail.y() + 100
+        widget.move(x, y)
+
+        # Start collapse
+        widget.collapse()
+        self.assertTrue(widget._animating)
+        # End rect right edge should equal start rect right edge
+        start_right = widget._animation.startValue().x() + widget._animation.startValue().width()
+        end_right = widget._animation.endValue().x() + widget._animation.endValue().width()
+        self.assertEqual(start_right, end_right, "Right edge must stay constant during right-side collapse")
+
+        # Verify size constraints are lifted during animation
+        self.assertEqual(widget.minimumSize().width(), 0)
+        self.assertEqual(widget.minimumSize().height(), 0)
+        self.assertEqual(widget.maximumSize().width(), 16777215)
+        self.assertEqual(widget.maximumSize().height(), 16777215)
+
+        # Verify content container is hidden
+        self.assertFalse(widget._expanded_container.isVisible())
+        self.assertFalse(widget._collapsed_btn.isVisible())
+
+        # Complete animation
+        widget._finish_animation_immediately()
+        self.assertFalse(widget._animating)
+        self.assertEqual(widget.width(), COLLAPSED_SIZE)
+        self.assertEqual(widget.height(), COLLAPSED_SIZE)
+        self.assertTrue(widget._collapsed_btn.isVisible())
+        self.assertFalse(widget._expanded_container.isVisible())
+        widget.close()
+
+    def test_fix2_right_anchored_expand_preserves_right_edge(self) -> None:
+        """Verify Fix 2: Right side expand animation keeps right edge identical."""
+        from ui.widget import FloatNoteWidget, FIXED_WIDTH, COLLAPSED_SIZE
+        widget = FloatNoteWidget()
+        widget.initialize()
+        widget.setFixedSize(COLLAPSED_SIZE, COLLAPSED_SIZE)
+        widget._collapsed = True
+        widget._apply_collapsed_constraints()
+        screen = QApplication.primaryScreen()
+        avail = screen.availableGeometry() if screen else QRect(0, 0, 1920, 1080)
+        x = avail.x() + avail.width() - COLLAPSED_SIZE - 20
+        y = avail.y() + 100
+        widget.move(x, y)
+
+        widget.expand()
+        self.assertTrue(widget._animating)
+        start_right = widget._animation.startValue().x() + widget._animation.startValue().width()
+        end_right = widget._animation.endValue().x() + widget._animation.endValue().width()
+        self.assertEqual(start_right, end_right, "Right edge must stay constant during right-side expand")
+
+        widget._finish_animation_immediately()
+        self.assertFalse(widget._animating)
+        self.assertEqual(widget.width(), FIXED_WIDTH)
+        self.assertTrue(widget._expanded_container.isVisible())
+        self.assertFalse(widget._collapsed_btn.isVisible())
+        widget.close()
+
+    def test_fix3_interrupted_animation_on_hotkey(self) -> None:
+        """Verify Fix 3: Interrupted animation (hide/show/toggle) finishes immediately and enforces size."""
+        from ui.widget import FloatNoteWidget, FIXED_WIDTH, COLLAPSED_SIZE
+        widget = FloatNoteWidget()
+        widget.initialize()
+        widget.move(100, 100)
+
+        # Trigger collapse
+        widget.collapse()
+        self.assertTrue(widget._animating)
+
+        # Mid-animation, user presses hotkey to hide
+        widget.hide_widget()
+        self.assertFalse(widget._animating)
+        self.assertFalse(widget.isVisible())
+        self.assertEqual(widget.width(), COLLAPSED_SIZE)
+        self.assertEqual(widget.height(), COLLAPSED_SIZE)
+
+        # User presses hotkey to show
+        widget.show_widget()
+        self.assertFalse(widget._animating)
+        self.assertTrue(widget.isVisible())
+        self.assertEqual(widget.width(), COLLAPSED_SIZE)
+        self.assertEqual(widget.height(), COLLAPSED_SIZE)
+
+        # Expand and interrupt by hide
+        widget.expand()
+        self.assertTrue(widget._animating)
+        widget.hide_widget()
+        self.assertFalse(widget._animating)
+        self.assertEqual(widget.width(), FIXED_WIDTH)
+        widget.close()
+
+    def test_fix3_size_invariants_and_logging(self) -> None:
+        """Verify Fix 3: Size mismatch is logged and corrected by _enforce_size_invariants."""
+        from ui.widget import FloatNoteWidget, FIXED_WIDTH, COLLAPSED_SIZE
+        widget = FloatNoteWidget()
+        widget.initialize()
+
+        with self.assertLogs("floatnote", level="WARNING") as cm:
+            # Force wrong width and height while expanded
+            widget.setMinimumSize(0, 0)
+            widget.setMaximumSize(16777215, 16777215)
+            widget.resize(200, 100)
+            widget._enforce_size_invariants()
+
+        self.assertTrue(any("Size mismatch in expanded state" in log for log in cm.output))
+        self.assertEqual(widget.width(), FIXED_WIDTH)
+        self.assertGreaterEqual(widget.height(), 120)
+
+        # Test collapsed state
+        widget._collapsed = True
+        with self.assertLogs("floatnote", level="WARNING") as cm2:
+            widget.setMinimumSize(0, 0)
+            widget.setMaximumSize(16777215, 16777215)
+            widget.resize(100, 100)
+            widget._enforce_size_invariants()
+
+        self.assertTrue(any("Size mismatch in collapsed state" in log for log in cm2.output))
+        self.assertEqual(widget.width(), COLLAPSED_SIZE)
+        self.assertEqual(widget.height(), COLLAPSED_SIZE)
+        widget.close()
+
+    def test_fix4_native_geometry_sync_check(self) -> None:
+        """Verify Fix 4: _check_and_sync_native_geometry method exists, runs safely, and handles resync."""
+        from ui.widget import FloatNoteWidget
+        widget = FloatNoteWidget()
+        widget.initialize()
+        self.assertTrue(hasattr(widget, "_check_and_sync_native_geometry"))
+        # Call it when visible
+        widget.show()
+        widget._check_and_sync_native_geometry()
+        self.assertEqual(widget.width(), 288)
+        widget.close()
 
 
 if __name__ == "__main__":
